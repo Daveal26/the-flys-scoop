@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>The Flys Scoop</title>
+    <link rel="icon" href="/assets/fly.svg" />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <img class="brand-logo" src="/assets/logo.svg" alt="Fly on the wall logo" />
+        <div class="brand-text">
+          <div class="brand-name">The Flys Scoop</div>
+          <div class="brand-sub">News • Media • Movies • TV • Gossip</div>
+        </div>
+      </div>
+
+      <nav class="menu">
+        <button class="btn ghost" id="navHome">Scoops</button>
+        <button class="btn ghost" id="navAI">AI Finder</button>
+        <button class="btn ghost" id="navUpload">Upload</button>
+        <button class="btn ghost" id="navProfile">Profile</button>
+        <div class="menu-spacer"></div>
+        <span class="user-pill" id="userPill" hidden></span>
+        <button class="btn" id="navLogin">Login</button>
+        <button class="btn primary" id="navSignup">Sign up</button>
+        <button class="btn danger" id="navLogout" hidden>Logout</button>
+      </nav>
+    </header>
+
+    <main class="container">
+      <section class="panel" id="panelScoops">
+        <div class="panel-head">
+          <div>
+            <div class="h1">Latest Scoops</div>
+            <div class="muted">Every post includes: <b>The Flys Scoop new scoop</b></div>
+          </div>
+          <div class="filters">
+            <input id="searchInput" class="input" placeholder="Search scoops…" />
+            <select id="categorySelect" class="input"></select>
+            <button id="refreshBtn" class="btn">Refresh</button>
+          </div>
+        </div>
+
+        <div id="scoopsList" class="grid"></div>
+      </section>
+
+      <section class="panel" id="panelAI" hidden>
+        <div class="panel-head">
+          <div>
+            <div class="h1">AI Scoop Finder</div>
+            <div class="muted">
+              This bot searches trusted RSS sources and auto-categorizes scoops.
+              The more you upvote/downvote, the better it gets.
+            </div>
+          </div>
+          <div class="filters">
+            <button id="runAiBtn" class="btn primary">Find new scoops</button>
+          </div>
+        </div>
+        <div id="aiResult" class="card"></div>
+      </section>
+
+      <section class="panel" id="panelUpload" hidden>
+        <div class="panel-head">
+          <div>
+            <div class="h1">Upload a Scoop</div>
+            <div class="muted">Members can post scoops with a link and/or media. Videos try to auto-cut into a 1 minute clip.</div>
+          </div>
+        </div>
+
+        <form id="uploadForm" class="form">
+          <div class="row">
+            <label class="label">Title</label>
+            <input class="input" name="title" placeholder="What’s the scoop?" required minlength="3" maxlength="200" />
+          </div>
+          <div class="row">
+            <label class="label">Description</label>
+            <textarea class="input" name="description" placeholder="Add details (optional)" rows="4" maxlength="5000"></textarea>
+          </div>
+          <div class="row">
+            <label class="label">Link (optional)</label>
+            <input class="input" name="url" placeholder="https://..." />
+          </div>
+          <div class="row">
+            <label class="label">Category</label>
+            <select class="input" name="category" id="uploadCategorySelect"></select>
+          </div>
+          <div class="row">
+            <label class="label">Media (optional)</label>
+            <input class="input" type="file" name="media" accept="video/*,image/*" />
+          </div>
+          <div class="row">
+            <label class="label">Video edit mode (for uploaded videos)</label>
+            <div class="seg">
+              <label class="seg-item">
+                <input type="radio" name="editMode" value="auto" id="editAuto" checked />
+                <span>Auto edit</span>
+              </label>
+              <label class="seg-item">
+                <input type="radio" name="editMode" value="manual" id="editManual" />
+                <span>Manual edit</span>
+              </label>
+            </div>
+            <div class="muted">Auto: finds best 60 seconds near the loudest part + adds captions. Manual: choose start time + duration.</div>
+          </div>
+          <div class="row" id="manualEditFields" hidden>
+            <div class="row2">
+              <div>
+                <label class="label">Start (seconds)</label>
+                <input class="input" name="startSeconds" value="0" inputmode="decimal" />
+              </div>
+              <div>
+                <label class="label">Duration (seconds)</label>
+                <input class="input" name="durationSeconds" value="60" inputmode="decimal" />
+              </div>
+            </div>
+          </div>
+          <div class="row">
+            <label class="label">Trend template</label>
+            <select class="input" name="preset" id="presetSelect">
+              <option value="default">Default (landscape)</option>
+              <option value="vertical_9_16">Vertical 9:16</option>
+              <option value="square_1_1">Square 1:1</option>
+            </select>
+            <div class="muted">Auto edit may override this based on category. Manual uses your choice.</div>
+          </div>
+          <div class="row">
+            <label class="seg-item" style="justify-content:flex-start">
+              <input type="checkbox" name="subtitles" />
+              <span>Generate real subtitles (Whisper, local)</span>
+            </label>
+            <div class="muted">This will transcribe your clip and burn subtitles into the final video. It can take longer.</div>
+          </div>
+          <div class="row">
+            <button class="btn primary" type="submit">Post scoop</button>
+            <span class="muted" id="uploadStatus"></span>
+          </div>
+        </form>
+      </section>
+
+      <section class="panel" id="panelProfile" hidden>
+        <div class="panel-head">
+          <div>
+            <div class="h1">Profile</div>
+            <div class="muted">Upgrade your account, get verified, and manage socials.</div>
+          </div>
+        </div>
+        <div class="grid">
+          <div class="card">
+            <div class="h2">Your account</div>
+            <div class="muted" id="profileSummary" style="margin-top:8px"></div>
+            <div class="actions" style="margin-top:12px">
+              <button class="btn" id="upgradeMemberBtn">Upgrade to Member</button>
+              <button class="btn primary" id="buyVerifyBtn">Get Verified (CashApp/Venmo)</button>
+            </div>
+            <div class="muted" style="margin-top:10px">
+              Free (nonmember): 10 videos/month, no auto edit, no follow.<br/>
+              Member: 40 videos/month, auto edit, follow.<br/>
+              Verified: unlimited uploads, trusted badge, socials, follow.
+            </div>
+          </div>
+
+          <div class="card" id="verifyRequestCard">
+            <div class="h2">Verification (manual)</div>
+            <div class="muted">Pay using CashApp/Venmo, then upload your receipt screenshot and submit a verification request.</div>
+            <div class="actions" style="margin-top:12px">
+              <a class="btn" id="cashappLink" href="#" target="_blank" rel="noreferrer">Open CashApp</a>
+              <a class="btn" id="venmoLink" href="#" target="_blank" rel="noreferrer">Open Venmo</a>
+            </div>
+            <div class="muted" style="margin-top:10px" id="verifyStatus"></div>
+
+            <form id="verifyForm" class="form" style="padding:0; margin-top:12px">
+              <div class="row">
+                <label class="label">Your CashApp/Venmo handle (optional)</label>
+                <input class="input" name="handle" placeholder="@yourhandle" />
+              </div>
+              <div class="row">
+                <label class="label">Note (optional)</label>
+                <input class="input" name="note" placeholder="Anything we should know…" />
+              </div>
+              <div class="row">
+                <label class="label">Receipt screenshot / proof</label>
+                <input class="input" type="file" name="receipt" accept="image/*,application/pdf" required />
+              </div>
+              <div class="row">
+                <button class="btn primary" type="submit">Submit verification request</button>
+                <span class="muted" id="verifySubmitStatus"></span>
+              </div>
+            </form>
+          </div>
+
+          <div class="card" id="verifiedCard" hidden>
+            <div class="h2">Verified socials (quick access)</div>
+            <div class="muted">These show on your public profile.</div>
+            <div class="form" style="padding:0; margin-top:12px">
+              <div class="row"><label class="label">Instagram</label><input class="input" id="socInstagram" placeholder="https://instagram.com/..." /></div>
+              <div class="row"><label class="label">TikTok</label><input class="input" id="socTikTok" placeholder="https://tiktok.com/@..." /></div>
+              <div class="row"><label class="label">X</label><input class="input" id="socX" placeholder="https://x.com/..." /></div>
+              <div class="row"><label class="label">YouTube</label><input class="input" id="socYouTube" placeholder="https://youtube.com/..." /></div>
+              <div class="row"><label class="label">Website</label><input class="input" id="socWebsite" placeholder="https://..." /></div>
+              <div class="row">
+                <button class="btn primary" id="saveSocialsBtn" type="button">Save socials</button>
+                <span class="muted" id="socialsStatus"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Auth modal -->
+    <div class="modal" id="authModal" hidden>
+      <div class="modal-backdrop" data-close="1"></div>
+      <div class="modal-card">
+        <div class="modal-head">
+          <div class="h2" id="authTitle">Login</div>
+          <button class="btn ghost" data-close="1">✕</button>
+        </div>
+        <form id="authForm" class="form">
+          <div class="row">
+            <label class="label">Email</label>
+            <input class="input" name="email" placeholder="you@email.com" required />
+          </div>
+          <div class="row">
+            <label class="label">Password</label>
+            <input class="input" type="password" name="password" placeholder="At least 8 characters" required />
+          </div>
+          <div class="row">
+            <button class="btn primary" type="submit" id="authSubmit">Continue</button>
+            <span class="muted" id="authStatus"></span>
+          </div>
+        </form>
+        <div class="modal-foot muted">
+          Tip: Upvote good scoops to train the AI categories.
+        </div>
+      </div>
+    </div>
+
+    <script src="/app.js"></script>
+  </body>
+</html>
+
+
+

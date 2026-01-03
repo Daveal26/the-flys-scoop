@@ -1,0 +1,14 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "https://the-flys-scoop.fly.dev/api/$1"
+    },
+    {
+      "source": "/uploads/(.*)",
+      "destination": "https://the-flys-scoop.fly.dev/uploads/$1"
+    }
+  ]
+}
+
+

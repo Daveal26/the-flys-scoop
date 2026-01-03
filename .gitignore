@@ -1,0 +1,14 @@
+node_modules/
+data/
+uploads/
+.env
+
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+
+# OS/editor
+.DS_Store
+Thumbs.db
+
+

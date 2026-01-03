@@ -1,0 +1,30 @@
+# Fly.io config for the backend (Express + uploads + ffmpeg + Whisper).
+# NOTE: Fly app names (slugs) cannot contain spaces.
+# If you chose "the flys scoop" during `fly launch`, Fly will convert it to something like "the-flys-scoop".
+
+app = "the-flys-scoop"
+primary_region = "iad"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  PORT = "8080"
+  DATA_DIR = "/data"
+  UPLOADS_DIR = "/data/uploads"
+  # Set APP_ORIGINS in Fly secrets to your Vercel domain, e.g.:
+  # APP_ORIGINS = "https://theflysScoop.com"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ["app"]
+
+[mounts]
+  source = "appdata"
+  destination = "/data"
+
+

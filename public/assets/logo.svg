@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 140">
+  <defs>
+    <linearGradient id="g" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#60a5fa"/>
+      <stop offset="1" stop-color="#34d399"/>
+    </linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="10" stdDeviation="10" flood-color="#000" flood-opacity=".35"/>
+    </filter>
+  </defs>
+
+  <rect x="10" y="14" width="400" height="112" rx="26" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.10)"/>
+  <g transform="translate(44,34)" filter="url(#shadow)">
+    <g transform="translate(24,18) scale(0.9)">
+      <g fill="none" stroke="url(#g)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M30 18C10-2-10 22 12 36c10 6 22 0 28-10"/>
+        <path d="M58 18c20-20 40 4 18 18-10 6-22 0-28-10"/>
+        <path d="M44 12c-8 0-14 8-14 18s6 18 14 18 14-8 14-18-6-18-14-18z"/>
+        <path d="M44 48c-6 0-11 5-11 9s5 9 11 9 11-5 11-9-5-9-11-9z"/>
+        <path d="M32 44l-12 8"/>
+        <path d="M56 44l12 8"/>
+      </g>
+      <circle cx="44" cy="4" r="8" fill="url(#g)" opacity=".95"/>
+    </g>
+
+    <g transform="translate(110,18)">
+      <text x="0" y="28" font-family="ui-sans-serif, system-ui, Segoe UI, Roboto, Arial" font-size="28" font-weight="800" fill="#e5e7eb">
+        The Flys Scoop
+      </text>
+      <text x="0" y="56" font-family="ui-sans-serif, system-ui, Segoe UI, Roboto, Arial" font-size="14" font-weight="600" fill="#9ca3af">
+        Scoops • Gossip • Media Clips
+      </text>
+    </g>
+  </g>
+</svg>
+
+
+

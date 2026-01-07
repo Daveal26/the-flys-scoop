@@ -15,7 +15,7 @@ const API = {
       const text = await r.text();
       let data;
       try { data = text ? JSON.parse(text) : {}; } catch { data = { error: text || "Non-JSON response" }; }
-      if (!r.ok) return { error: data?.error || `HTTP ${r.status}` };
+      if (!r.ok) return { error: cleanApiError(data?.error || `HTTP ${r.status}`) };
       return data;
     } catch (e) {
       const msg = (e && e.name === "AbortError") ? "Request timed out" : (e?.message || e);
@@ -32,7 +32,7 @@ const API = {
       const text = await r.text();
       let data;
       try { data = text ? JSON.parse(text) : {}; } catch { data = { error: text || "Non-JSON response" }; }
-      if (!r.ok) return { error: data?.error || `HTTP ${r.status}` };
+      if (!r.ok) return { error: cleanApiError(data?.error || `HTTP ${r.status}`) };
       return data;
     } catch (e) {
       const msg = (e && e.name === "AbortError") ? "Request timed out" : (e?.message || e);
@@ -49,7 +49,7 @@ const API = {
       const text = await r.text();
       let data;
       try { data = text ? JSON.parse(text) : {}; } catch { data = { error: text || "Non-JSON response" }; }
-      if (!r.ok) return { error: data?.error || `HTTP ${r.status}` };
+      if (!r.ok) return { error: cleanApiError(data?.error || `HTTP ${r.status}`) };
       return data;
     } catch (e) {
       const msg = (e && e.name === "AbortError") ? "Request timed out" : (e?.message || e);
@@ -57,6 +57,16 @@ const API = {
     }
   }
 };
+
+function cleanApiError(err) {
+  const s = String(err || "");
+  const low = s.toLowerCase();
+  if (low.includes("not allowed by cors")) return "Blocked by backend CORS. Backend must allow your domain.";
+  if (low.includes("dns_hostname")) return "Backend host is not reachable (DNS). Check Vercel rewrites + Fly URL.";
+  if (low.includes("<!doctype html") || low.includes("<html")) return "Backend returned an HTML error page. Check backend logs/CORS.";
+  if (s.length > 180) return s.slice(0, 180) + "…";
+  return s || "Unknown error";
+}
 
 function authHeaders() {
   const token = localStorage.getItem("fotw_token");

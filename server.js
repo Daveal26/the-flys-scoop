@@ -49,13 +49,31 @@ app.use(cors({
   origin: (origin, cb) => {
     // allow same-origin/non-browser requests
     if (!origin) return cb(null, true);
-    const norm = (o) => String(o || "")
-      .trim()
-      .replace(/\/+$/g, "")
-      .toLowerCase();
-    const o = norm(origin);
+    const norm = (o) => String(o || "").trim().replace(/\/+$/g, "").toLowerCase();
     const allowed = new Set(ALLOWED_ORIGINS.map(norm));
+    const o = norm(origin);
     if (allowed.has(o)) return cb(null, true);
+
+    // Also allow common production patterns:
+    // - if you allow https://theflysscoop.com, also allow https://www.theflysscoop.com
+    // - allow any subdomain of an allowed base host
+    const stripWww = (h) => String(h || "").toLowerCase().replace(/^www\./, "");
+    const tryParse = (v) => {
+      try { return new URL(v); } catch { return null; }
+    };
+    const oUrl = tryParse(o);
+    if (oUrl) {
+      const oHost = stripWww(oUrl.hostname);
+      const allowedHosts = Array.from(allowed)
+        .map(tryParse)
+        .filter(Boolean)
+        .map(u => stripWww(u.hostname));
+      for (const h of allowedHosts) {
+        if (oHost === h) return cb(null, true);
+        if (oHost.endsWith("." + h)) return cb(null, true);
+      }
+    }
+
     return cb(new Error("Not allowed by CORS"));
   },
   credentials: true

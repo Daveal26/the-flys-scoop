@@ -163,6 +163,35 @@
             </div>
           </div>
 
+          <div class="card" id="memberRequestCard">
+            <div class="h2">Membership (manual)</div>
+            <div class="muted">Pay using CashApp/Venmo, then upload your receipt screenshot and submit a membership request.</div>
+            <div class="actions" style="margin-top:12px">
+              <a class="btn" id="memberCashappLink" href="#" target="_blank" rel="noreferrer">Open CashApp</a>
+              <a class="btn" id="memberVenmoLink" href="#" target="_blank" rel="noreferrer">Open Venmo</a>
+            </div>
+            <div class="muted" style="margin-top:10px" id="memberStatus"></div>
+
+            <form id="memberForm" class="form" style="padding:0; margin-top:12px">
+              <div class="row">
+                <label class="label">Your CashApp/Venmo handle (optional)</label>
+                <input class="input" name="handle" placeholder="@yourhandle" />
+              </div>
+              <div class="row">
+                <label class="label">Note (optional)</label>
+                <input class="input" name="note" placeholder="Anything we should know…" />
+              </div>
+              <div class="row">
+                <label class="label">Receipt screenshot / proof</label>
+                <input class="input" type="file" name="receipt" accept="image/*,application/pdf" required />
+              </div>
+              <div class="row">
+                <button class="btn primary" type="submit">Submit membership request</button>
+                <span class="muted" id="memberSubmitStatus"></span>
+              </div>
+            </form>
+          </div>
+
           <div class="card" id="verifyRequestCard">
             <div class="h2">Verification (manual)</div>
             <div class="muted">Pay using CashApp/Venmo, then upload your receipt screenshot and submit a verification request.</div>

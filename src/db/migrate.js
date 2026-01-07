@@ -130,6 +130,26 @@ function runMigrationsIfNeeded() {
     `);
   }
 
+  if (!hasTable("membership_requests")) {
+    db.exec(`
+      CREATE TABLE membership_requests (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','approved','denied')),
+        method TEXT NOT NULL DEFAULT 'manual', -- manual (cashapp/venmo)
+        handle TEXT,
+        note TEXT,
+        receipt_path TEXT,
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        reviewed_at TEXT,
+        reviewed_by TEXT,
+        FOREIGN KEY(user_id) REFERENCES users(id)
+      );
+      CREATE INDEX idx_memreq_user ON membership_requests(user_id);
+      CREATE INDEX idx_memreq_status ON membership_requests(status);
+    `);
+  }
+
   if (!hasTable("category_keyword_weights")) {
     db.exec(`
       CREATE TABLE category_keyword_weights (

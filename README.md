@@ -143,6 +143,17 @@ Admin endpoints (send header `x-admin-token: <ADMIN_TOKEN>`):
 - `POST /api/admin/verification/:id/approve`
 - `POST /api/admin/verification/:id/deny`
 
+### Paid membership (manual, CashApp/Venmo)
+
+Membership upgrades can also be handled manually:
+- Users pay using `MEMBER_CASHAPP_LINK` / `MEMBER_VENMO_LINK` (or the base links if not set)
+- Then they submit a receipt in **Profile → Membership (manual)**
+
+Admin endpoints (send header `x-admin-token: <ADMIN_TOKEN>`):
+- `GET /api/admin/membership/requests`
+- `POST /api/admin/membership/:id/approve`
+- `POST /api/admin/membership/:id/deny`
+
 
 ### Optional: Whisper subtitles (local)
 

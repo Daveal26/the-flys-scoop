@@ -36,6 +36,8 @@ const AI_AUTO_RUN_INTERVAL_MINUTES = Number(process.env.AI_AUTO_RUN_INTERVAL_MIN
 
 const CASHAPP_LINK = process.env.CASHAPP_LINK || "";
 const VENMO_LINK = process.env.VENMO_LINK || "";
+const MEMBER_CASHAPP_LINK = process.env.MEMBER_CASHAPP_LINK || CASHAPP_LINK;
+const MEMBER_VENMO_LINK = process.env.MEMBER_VENMO_LINK || VENMO_LINK;
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN || "";
 
 ensureDbDir();
@@ -224,6 +226,13 @@ app.get("/api/profile", requireAuth(JWT_SECRET), (req, res) => {
     ORDER BY datetime(created_at) DESC
     LIMIT 1
   `).get(req.user.id);
+  const latestMemberReq = db.prepare(`
+    SELECT id, status, created_at, reviewed_at
+    FROM membership_requests
+    WHERE user_id = ?
+    ORDER BY datetime(created_at) DESC
+    LIMIT 1
+  `).get(req.user.id);
   res.json({
     user: req.user,
     uploads: { used, limit: Number.isFinite(limit) ? limit : null },
@@ -231,6 +240,11 @@ app.get("/api/profile", requireAuth(JWT_SECRET), (req, res) => {
       cashappLink: CASHAPP_LINK || null,
       venmoLink: VENMO_LINK || null,
       latestRequest: latestReq || null
+    },
+    membership: {
+      cashappLink: MEMBER_CASHAPP_LINK || null,
+      venmoLink: MEMBER_VENMO_LINK || null,
+      latestRequest: latestMemberReq || null
     }
   });
 });
@@ -294,6 +308,43 @@ app.post("/api/verification/request", requireAuth(JWT_SECRET), receiptUpload.sin
   res.json({ ok: true, request: row });
 });
 
+// Manual membership request (CashApp/Venmo/etc)
+app.post("/api/membership/request", requireAuth(JWT_SECRET), receiptUpload.single("receipt"), (req, res) => {
+  if (req.user.tier === "member" || req.user.tier === "verified" || req.user.isVerified) {
+    return res.status(400).json({ error: "Already member/verified" });
+  }
+  const schema = z.object({
+    handle: z.string().max(100).optional().default(""),
+    note: z.string().max(2000).optional().default("")
+  });
+  const parsed = schema.safeParse({ handle: req.body.handle || "", note: req.body.note || "" });
+  if (!parsed.success) return res.status(400).json({ error: "Invalid request" });
+
+  const receiptPath = req.file ? `/uploads/${req.file.filename}` : null;
+  const info = db.prepare(`
+    INSERT INTO membership_requests (user_id, status, method, handle, note, receipt_path)
+    VALUES (@userId, 'pending', 'manual', @handle, @note, @receiptPath)
+  `).run({
+    userId: req.user.id,
+    handle: parsed.data.handle.trim() || null,
+    note: parsed.data.note.trim() || null,
+    receiptPath
+  });
+  const row = db.prepare("SELECT id, status, created_at FROM membership_requests WHERE id = ?").get(info.lastInsertRowid);
+  res.json({ ok: true, request: row });
+});
+
+app.get("/api/membership/status", requireAuth(JWT_SECRET), (req, res) => {
+  const latestReq = db.prepare(`
+    SELECT id, status, created_at, reviewed_at, reviewed_by
+    FROM membership_requests
+    WHERE user_id = ?
+    ORDER BY datetime(created_at) DESC
+    LIMIT 1
+  `).get(req.user.id);
+  res.json({ request: latestReq || null });
+});
+
 app.get("/api/verification/status", requireAuth(JWT_SECRET), (req, res) => {
   const latestReq = db.prepare(`
     SELECT id, status, created_at, reviewed_at, reviewed_by
@@ -344,6 +395,48 @@ app.post("/api/admin/verification/:id/deny", requireAdmin, (req, res) => {
   const row = db.prepare("SELECT * FROM verification_requests WHERE id = ?").get(id);
   if (!row) return res.status(404).json({ error: "Not found" });
   db.prepare("UPDATE verification_requests SET status='denied', reviewed_at=@now, reviewed_by=@by WHERE id=@id").run({
+    id,
+    now: new Date().toISOString(),
+    by: "admin"
+  });
+  res.json({ ok: true });
+});
+
+// Admin: membership review
+app.get("/api/admin/membership/requests", requireAdmin, (req, res) => {
+  const rows = db.prepare(`
+    SELECT mr.*, u.email
+    FROM membership_requests mr
+    JOIN users u ON u.id = mr.user_id
+    WHERE mr.status = 'pending'
+    ORDER BY datetime(mr.created_at) ASC
+    LIMIT 100
+  `).all();
+  res.json({ requests: rows });
+});
+
+app.post("/api/admin/membership/:id/approve", requireAdmin, (req, res) => {
+  const id = Number(req.params.id);
+  const row = db.prepare("SELECT * FROM membership_requests WHERE id = ?").get(id);
+  if (!row) return res.status(404).json({ error: "Not found" });
+  db.prepare("UPDATE membership_requests SET status='approved', reviewed_at=@now, reviewed_by=@by WHERE id=@id").run({
+    id,
+    now: new Date().toISOString(),
+    by: "admin"
+  });
+  // Only upgrade to member if not already verified
+  const user = db.prepare("SELECT id, tier, is_verified FROM users WHERE id = ?").get(row.user_id);
+  if (user && !(user.tier === "verified" || Number(user.is_verified) === 1)) {
+    db.prepare("UPDATE users SET tier='member' WHERE id = ?").run(row.user_id);
+  }
+  res.json({ ok: true });
+});
+
+app.post("/api/admin/membership/:id/deny", requireAdmin, (req, res) => {
+  const id = Number(req.params.id);
+  const row = db.prepare("SELECT * FROM membership_requests WHERE id = ?").get(id);
+  if (!row) return res.status(404).json({ error: "Not found" });
+  db.prepare("UPDATE membership_requests SET status='denied', reviewed_at=@now, reviewed_by=@by WHERE id=@id").run({
     id,
     now: new Date().toISOString(),
     by: "admin"

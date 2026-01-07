@@ -448,12 +448,6 @@ const venmoLink = document.getElementById("venmoLink");
 const verifyStatus = document.getElementById("verifyStatus");
 const verifyForm = document.getElementById("verifyForm");
 const verifySubmitStatus = document.getElementById("verifySubmitStatus");
-const memberRequestCard = document.getElementById("memberRequestCard");
-const memberCashappLink = document.getElementById("memberCashappLink");
-const memberVenmoLink = document.getElementById("memberVenmoLink");
-const memberStatus = document.getElementById("memberStatus");
-const memberForm = document.getElementById("memberForm");
-const memberSubmitStatus = document.getElementById("memberSubmitStatus");
 
 async function loadProfile() {
   if (!isAuthed()) return;
@@ -476,27 +470,6 @@ async function loadProfile() {
   `;
 
   verifiedCard.hidden = !verified;
-
-  // Membership card (manual)
-  const m = out.membership || {};
-  if (memberRequestCard) memberRequestCard.hidden = verified || tier === "member";
-  if (memberCashappLink) {
-    const has = !!m.cashappLink;
-    memberCashappLink.href = m.cashappLink || "#";
-    memberCashappLink.setAttribute("aria-disabled", has ? "false" : "true");
-    memberCashappLink.textContent = has ? "Open CashApp" : "CashApp (not set)";
-  }
-  if (memberVenmoLink) {
-    const has = !!m.venmoLink;
-    memberVenmoLink.href = m.venmoLink || "#";
-    memberVenmoLink.setAttribute("aria-disabled", has ? "false" : "true");
-    memberVenmoLink.textContent = has ? "Open Venmo" : "Venmo (not set)";
-  }
-  if (memberStatus) {
-    const req = m.latestRequest;
-    if (!req) memberStatus.innerHTML = "Status: <b>No membership request submitted yet</b>";
-    else memberStatus.innerHTML = `Status: <b>${escapeHtml(req.status)}</b> • submitted ${escapeHtml(fmtDate(req.created_at))}`;
-  }
 
   // Manual verification card
   if (verifyRequestCard) verifyRequestCard.hidden = verified;
@@ -526,14 +499,13 @@ async function loadProfile() {
 }
 
 upgradeMemberBtn?.addEventListener("click", async () => {
-  // Membership is manual payment now; scroll to membership card
-  showPanel("profile");
+  // Membership is free: upgrade immediately for older free accounts.
+  socialsStatus.textContent = "Upgrading…";
+  const out = await API.post("/api/profile/upgrade-member", {});
+  socialsStatus.textContent = out?.ok ? "Upgraded ✓" : (out?.error || "Failed");
   await loadProfile();
-  memberRequestCard?.scrollIntoView({ behavior: "smooth", block: "start" });
-  const cashHref = memberCashappLink?.getAttribute("aria-disabled") === "false" ? memberCashappLink?.href : null;
-  const venmoHref = memberVenmoLink?.getAttribute("aria-disabled") === "false" ? memberVenmoLink?.href : null;
-  const href = cashHref || venmoHref;
-  if (href) window.open(href, "_blank", "noopener,noreferrer");
+  await refreshFollowing();
+  await loadScoops();
 });
 
 buyVerifyBtn?.addEventListener("click", async () => {
@@ -571,15 +543,6 @@ verifyForm?.addEventListener("submit", async (e) => {
   await loadProfile();
 });
 
-memberForm?.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  if (!isAuthed()) return openAuth("login");
-  memberSubmitStatus.textContent = "Submitting…";
-  const fd = new FormData(memberForm);
-  const out = await API.postForm("/api/membership/request", fd);
-  memberSubmitStatus.textContent = out?.ok ? "Submitted ✓ (pending review)" : (out?.error || "Failed");
-  await loadProfile();
-});
 
 // Public profile modal (simple alert-style)
 async function openUserProfile(userId) {

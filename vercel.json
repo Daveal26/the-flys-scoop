@@ -2,11 +2,11 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "https://the-flys-scoop.fly.dev/api/$1"
+      "destination": "https://<your-app>.fly.dev"
     },
     {
       "source": "/uploads/(.*)",
-      "destination": "https://the-flys-scoop.fly.dev/uploads/$1"
+      "destination": "https://<your-app>.fly.dev"
     }
   ]
 }

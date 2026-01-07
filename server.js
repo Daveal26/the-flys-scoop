@@ -6,6 +6,7 @@ const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
 const cookieParser = require("cookie-parser");
+const compression = require("compression");
 const multer = require("multer");
 
 const { z } = require("zod");
@@ -43,11 +44,18 @@ seedIfEmpty();
 
 const app = express();
 app.use(helmet({ contentSecurityPolicy: false })); // keep simple for local dev
+app.use(compression());
 app.use(cors({
   origin: (origin, cb) => {
     // allow same-origin/non-browser requests
     if (!origin) return cb(null, true);
-    if (ALLOWED_ORIGINS.includes(origin)) return cb(null, true);
+    const norm = (o) => String(o || "")
+      .trim()
+      .replace(/\/+$/g, "")
+      .toLowerCase();
+    const o = norm(origin);
+    const allowed = new Set(ALLOWED_ORIGINS.map(norm));
+    if (allowed.has(o)) return cb(null, true);
     return cb(new Error("Not allowed by CORS"));
   },
   credentials: true

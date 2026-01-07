@@ -28,4 +28,3 @@ primary_region = "iad"
   source = "appdata"
   destination = "/data"
 
-

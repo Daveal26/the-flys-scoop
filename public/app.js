@@ -1,23 +1,60 @@
 const API = {
+  async _fetchWithTimeout(path, init, timeoutMs = 9000) {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), timeoutMs);
+    try {
+      const r = await fetch(path, { ...init, signal: ctrl.signal });
+      return r;
+    } finally {
+      clearTimeout(t);
+    }
+  },
   async get(path) {
-    const r = await fetch(path, { headers: authHeaders() });
-    return await r.json();
+    try {
+      const r = await API._fetchWithTimeout(path, { headers: authHeaders() }, 9000);
+      const text = await r.text();
+      let data;
+      try { data = text ? JSON.parse(text) : {}; } catch { data = { error: text || "Non-JSON response" }; }
+      if (!r.ok) return { error: data?.error || `HTTP ${r.status}` };
+      return data;
+    } catch (e) {
+      const msg = (e && e.name === "AbortError") ? "Request timed out" : (e?.message || e);
+      return { error: `Network error: ${msg}` };
+    }
   },
   async post(path, body) {
-    const r = await fetch(path, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", ...authHeaders() },
-      body: JSON.stringify(body || {})
-    });
-    return await r.json();
+    try {
+      const r = await API._fetchWithTimeout(path, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify(body || {})
+      }, 12000);
+      const text = await r.text();
+      let data;
+      try { data = text ? JSON.parse(text) : {}; } catch { data = { error: text || "Non-JSON response" }; }
+      if (!r.ok) return { error: data?.error || `HTTP ${r.status}` };
+      return data;
+    } catch (e) {
+      const msg = (e && e.name === "AbortError") ? "Request timed out" : (e?.message || e);
+      return { error: `Network error: ${msg}` };
+    }
   },
   async postForm(path, formData) {
-    const r = await fetch(path, {
-      method: "POST",
-      headers: { ...authHeaders() },
-      body: formData
-    });
-    return await r.json();
+    try {
+      const r = await API._fetchWithTimeout(path, {
+        method: "POST",
+        headers: { ...authHeaders() },
+        body: formData
+      }, 30000);
+      const text = await r.text();
+      let data;
+      try { data = text ? JSON.parse(text) : {}; } catch { data = { error: text || "Non-JSON response" }; }
+      if (!r.ok) return { error: data?.error || `HTTP ${r.status}` };
+      return data;
+    } catch (e) {
+      const msg = (e && e.name === "AbortError") ? "Request timed out" : (e?.message || e);
+      return { error: `Network error: ${msg}` };
+    }
   }
 };
 
@@ -123,9 +160,15 @@ authModal.addEventListener("click", (e) => {
   if (t && t.dataset && t.dataset.close) closeAuth();
 });
 
+// Always allow Escape to close the modal (helps if network is slow).
+window.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && !authModal.hidden) closeAuth();
+});
+
 authForm.addEventListener("submit", async (e) => {
   e.preventDefault();
   authStatus.textContent = "Working…";
+  authSubmit.disabled = true;
   const fd = new FormData(authForm);
   const email = String(fd.get("email") || "");
   const password = String(fd.get("password") || "");
@@ -139,6 +182,7 @@ authForm.addEventListener("submit", async (e) => {
   } else {
     authStatus.textContent = out?.error || "Auth failed";
   }
+  authSubmit.disabled = false;
 });
 
 // Categories
@@ -236,6 +280,32 @@ function renderScoopCard(s) {
   `;
 }
 
+function cacheKeyForScoops(params) {
+  return `tfs_scoops_cache:${params.toString()}`;
+}
+
+function loadScoopsCache(params) {
+  try {
+    const raw = localStorage.getItem(cacheKeyForScoops(params));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed || !Array.isArray(parsed.scoops)) return null;
+    // consider cache fresh for 10 minutes
+    if (Date.now() - Number(parsed.savedAt || 0) > 10 * 60 * 1000) return null;
+    return parsed.scoops;
+  } catch {
+    return null;
+  }
+}
+
+function saveScoopsCache(params, scoops) {
+  try {
+    localStorage.setItem(cacheKeyForScoops(params), JSON.stringify({ savedAt: Date.now(), scoops }));
+  } catch {
+    // ignore quota
+  }
+}
+
 async function loadScoops() {
   const cat = categorySelect.value;
   const q = searchInput.value.trim();
@@ -243,9 +313,23 @@ async function loadScoops() {
   if (cat && cat !== "All") params.set("category", cat);
   if (q) params.set("q", q);
 
-  scoopsList.innerHTML = `<div class="card"><div class="muted">Loading…</div></div>`;
+  // Show cached scoops immediately for fast UX, then refresh in background.
+  const cached = loadScoopsCache(params);
+  if (cached && cached.length) {
+    scoopsList.innerHTML = cached.map(renderScoopCard).join("");
+  } else {
+    scoopsList.innerHTML = `<div class="card"><div class="muted">Loading…</div></div>`;
+  }
+
   const out = await API.get(`/api/scoops?${params.toString()}`);
+  if (out?.error) {
+    // If cache exists, keep it and show a small hint instead of blanking the feed.
+    if (cached && cached.length) return;
+    scoopsList.innerHTML = `<div class="card"><div class="muted"><b>Can’t load scoops:</b> ${escapeHtml(out.error)}<br/>If you’re on the Vercel domain, this usually means the backend proxy (/api) isn’t connected to Fly yet, Fly is cold-starting, or Fly isn’t allowing your domain origin.</div></div>`;
+    return;
+  }
   const scoops = out.scoops || [];
+  saveScoopsCache(params, scoops);
 
   if (scoops.length === 0) {
     scoopsList.innerHTML = `<div class="card"><div class="muted">No scoops yet. Try running the AI Finder or uploading one.</div></div>`;

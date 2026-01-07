@@ -72,6 +72,14 @@ app.use(cors({
         if (oHost === h) return cb(null, true);
         if (oHost.endsWith("." + h)) return cb(null, true);
       }
+
+      // Fallback: allow your production domain even if APP_ORIGINS is misconfigured.
+      // This prevents login from failing with CORS when the frontend is on:
+      // - https://theflysscoop.com
+      // - https://www.theflysscoop.com
+      if (oHost === "theflysscoop.com" || oHost.endsWith(".theflysscoop.com")) {
+        return cb(null, true);
+      }
     }
 
     return cb(new Error("Not allowed by CORS"));
@@ -79,6 +87,18 @@ app.use(cors({
   credentials: true
 }));
 app.use(cookieParser());
+
+// Return JSON for CORS errors (instead of default HTML) so the frontend shows a clean message.
+app.use((err, req, res, next) => {
+  if (err && String(err.message || "").includes("Not allowed by CORS")) {
+    return res.status(403).json({
+      error: "Not allowed by CORS",
+      origin: req.headers.origin || null,
+      allowedOrigins: ALLOWED_ORIGINS
+    });
+  }
+  return next(err);
+});
 
 app.use(express.json({ limit: "2mb" }));
 

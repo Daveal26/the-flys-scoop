@@ -242,7 +242,7 @@ function renderScoopCard(s) {
   const link = s.url ? `<a class="btn" href="${escapeHtml(s.url)}" target="_blank" rel="noreferrer">Open link</a>` : "";
   const postedById = s.posted_by_user_id ? Number(s.posted_by_user_id) : null;
   const viewer = getUser();
-  const canFollow = !!(viewer && (viewer.tier === "member" || viewer.tier === "verified" || viewer.isVerified));
+  const canFollow = !!(viewer && (viewer.tier === "verified" || viewer.isVerified));
   const notSelf = postedById && viewer && Number(viewer.id) !== postedById;
   const followBtn = (postedById && canFollow && notSelf)
     ? `<button class="btn" data-follow="${postedById}">${followingSet.has(postedById) ? "Unfollow" : "Follow"}</button>`
@@ -424,7 +424,7 @@ async function refreshFollowing() {
   followingSet = new Set();
   if (!isAuthed()) return;
   const user = getUser();
-  const canFollow = !!(user && (user.tier === "member" || user.tier === "verified" || user.isVerified));
+  const canFollow = !!(user && (user.tier === "verified" || user.isVerified));
   if (!canFollow) return;
   const out = await API.get("/api/following");
   for (const id of (out.following || [])) followingSet.add(Number(id));
@@ -466,7 +466,7 @@ async function loadProfile() {
     <div style="margin-top:6px"><b>Tier:</b> ${escapeHtml(tier)} ${verified ? " • <b>Trusted Verified ✓</b>" : ""}</div>
     <div style="margin-top:6px"><b>Video uploads this month:</b> ${escapeHtml(String(used))} / ${escapeHtml(limitText)}</div>
     <div style="margin-top:6px"><b>Auto edit:</b> ${tier === "member" || verified ? "Enabled" : "Locked (members only)"}</div>
-    <div style="margin-top:6px"><b>Follow:</b> ${tier === "member" || verified ? "Enabled" : "Locked (members only)"}</div>
+    <div style="margin-top:6px"><b>Follow:</b> ${verified ? "Enabled" : "Locked (verified only)"}</div>
   `;
 
   verifiedCard.hidden = !verified;

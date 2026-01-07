@@ -189,7 +189,8 @@ app.get("/api/me", requireAuth(JWT_SECRET), (req, res) => {
 });
 
 function tierAllowsFollow(user) {
-  return user && (user.tier === "member" || user.tier === "verified" || user.isVerified);
+  // Follow is a Verified-only feature
+  return user && (user.tier === "verified" || user.isVerified);
 }
 
 function tierAllowsAutoEdit(user) {
@@ -382,7 +383,7 @@ app.get("/api/following", requireAuth(JWT_SECRET), (req, res) => {
 });
 
 app.post("/api/follow/:userId", requireAuth(JWT_SECRET), (req, res) => {
-  if (!tierAllowsFollow(req.user)) return res.status(403).json({ error: "Follow is for members only" });
+  if (!tierAllowsFollow(req.user)) return res.status(403).json({ error: "Follow is for verified users only" });
   const targetId = Number(req.params.userId);
   if (!Number.isFinite(targetId) || targetId <= 0) return res.status(400).json({ error: "Invalid user" });
   if (targetId === Number(req.user.id)) return res.status(400).json({ error: "Cannot follow yourself" });
@@ -399,7 +400,7 @@ app.post("/api/follow/:userId", requireAuth(JWT_SECRET), (req, res) => {
 });
 
 app.delete("/api/follow/:userId", requireAuth(JWT_SECRET), (req, res) => {
-  if (!tierAllowsFollow(req.user)) return res.status(403).json({ error: "Follow is for members only" });
+  if (!tierAllowsFollow(req.user)) return res.status(403).json({ error: "Follow is for verified users only" });
   const targetId = Number(req.params.userId);
   if (!Number.isFinite(targetId) || targetId <= 0) return res.status(400).json({ error: "Invalid user" });
   db.prepare("DELETE FROM follows WHERE follower_user_id = ? AND followee_user_id = ?").run(req.user.id, targetId);

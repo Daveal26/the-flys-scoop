@@ -149,6 +149,9 @@ Membership is **free**:
 - Signing up makes a user a **member**
 - Older “free” accounts can upgrade in **Profile → Upgrade to Member**
 
+Follow:
+- **Verified only** (members do not have follow)
+
 
 ### Optional: Whisper subtitles (local)
 

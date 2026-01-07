@@ -2,11 +2,11 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "https://<your-app>.fly.dev"
+      "destination": "https://YOUR_FLY_APP.fly.dev/api/$1"
     },
     {
       "source": "/uploads/(.*)",
-      "destination": "https://<your-app>.fly.dev"
+      "destination": "https://YOUR_FLY_APP.fly.dev/uploads/$1"
     }
   ]
 }
